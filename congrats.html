@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Gratulálok!</title>
+  <link rel="shortcut icon" href="images.jpg" type="image/x-icon">
+  <style>
+      body {
+          font-family: monospace;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 100vh;
+          margin: 0;
+          text-align: center;
+          overflow: hidden;
+          color: #073b07;
+          background-image: url("backg.png");
+      }
+
+
+
+      .card {
+          padding: 94px;
+          border: 1px solid #000000;
+          border-radius: 8px;
+          background: rgb(32, 7, 0);
+          box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+          z-index: 1;
+      }
+
+      button {
+          margin-top: 12px;
+          font-family: monospace;
+          padding: 8px 12px;
+          cursor: pointer;
+      }
+
+      h1 {
+          font-size: 80px;
+          color: rgba(240, 255, 255, 0.79);
+          font-family: cursive;
+          font-size: 80px;
+          color: #fff;
+          text-align: center;
+          -webkit-animation: glow 1s ease-in-out infinite alternate;
+          -moz-animation: glow 1s ease-in-out infinite alternate;
+          animation: glow 1s ease-in-out infinite alternate;
+      }
+
+
+
+
+      @-webkit-keyframes glow {
+          from {
+              text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #e6c700, 0 0 40px #e60000, 0 0 50px #e60000, 0 0 60px #e6ad00, 0 0 70px #e60073;
+          }
+
+          to {
+              text-shadow: 0 0 20px #fff, 0 0 30px #ff4da6, 0 0 40px #b8ff4d, 0 0 50px #ff974d, 0 0 60px #78043e, 0 0 70px #ff4d4d, 0 0 80px #ff4da6;
+          }
+      }
+
+      p {
+          font-size: 30px;
+          color: rgb(168, 112, 112);
+          font-family: fantasy;
+      }
+  </style>
+</head>
+<body>
+
+
+
+  <div class="card">
+    <h1>Gratulálok!</h1>
+    <p>Megnyerted a játékot.</p>
+    <button onclick="location.href='guessthecelebrity.html'">Újrakezdés</button>
+  </div>
+
+</body>
+</html>

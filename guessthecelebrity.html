@@ -1,0 +1,376 @@
+﻿<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TKAHENRMKAEJML</title>
+    <link rel="shortcut icon" href="images.jpg" type="image/x-icon">
+    <link rel="stylesheet" href="guess.css">
+    <script src="hull.js"></script>
+    <style>
+        body {
+            background: #fff;
+            font-family: cursive;
+            color: #d2e2ef;
+            text-align: center;
+            margin-top: 30px;
+            background-image: url(bg.jpg);
+        }
+
+        h1 {
+            -webkit-animation: glow 1s ease-in-out infinite alternate;
+            -moz-animation: glow 1s ease-in-out infinite alternate;
+            animation: glow 1s ease-in-out infinite alternate;
+        }
+
+        @-webkit-keyframes glow {
+            from {
+                text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #e60073, 0 0 40px #ff0000, 0 0 50px #e60073, 0 0 60px #00ff21, 0 0 70px #00ff21;
+            }
+
+            to {
+                text-shadow: 0 0 20px #fff, 0 0 30px #3a4b9e, 0 0 40px #ff4da6, 0 0 50px #ff4da6, 0 0 60px #e60073, 0 0 70px #ff0000, 0 0 80px #00ff21;
+            }
+        }
+
+
+        canvas {
+            border: 1px solid #ffffff;
+            display: block;
+            margin: 20px auto;
+            max-width: 90vw;
+            max-height: 75vh;
+        }
+
+        input, button {
+            font-family: monospace;
+            font-size: 16px;
+            margin: 5px;
+        }
+
+        #suggestions {
+            background-color: rgb(4, 4, 72);
+            margin-top: 5px;
+            font-size: 14px;
+            color: #ffffff;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            text-align: left;
+        }
+
+        .suggestion-item {
+            padding: 6px 8px;
+            cursor: pointer;
+        }
+
+            .suggestion-item:hover,
+            .suggestion-item.selected {
+                background: #3a4b9e;
+            }
+
+        #mistakes {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            font-family: monospace;
+            font-size: 20px; /* increased size */
+            color: #ff3b3b; /* red */
+            font-weight: 700;
+            text-shadow: 0 1px 0 rgba(0,0,0,0.25);
+        }
+    </style>
+</head>
+<body>
+
+    <h1>TKAHENRMKAEJML!</h1>
+
+    <canvas id="canvas" width="500" height="500"></canvas>
+    <p id="progressInfo">Kép: 1 / 1</p>
+    <br>
+    <form id="guessForm" autocomplete="off">
+        <input type="text" id="guess" placeholder="Tipp ide...">
+        <button id="submit" type="submit">Tipp</button>
+    </form>
+    <div id="suggestions" role="listbox" aria-label="Javaslatok"></div>
+    <p id="status"></p>
+    <p id="mistakes">Hibák: 0</p>
+
+    <script>
+        // --- Beállítások ---
+        const imageFolder = 'images/';
+        const basePixelSize = 35;
+        let maxCanvasSize = 500;
+        const maxAllowed = 600;
+
+        const maxImages = 33;
+        const answers = [
+            'Ryan Reynolds', 'Dwayne Johnson', 'Johnny Depp', 'Desh', 'Michael Jackson',
+            'Dua Lipa', 'Kolumbusz Kristóf', 'Arnold Schwarzenegger', 'Gáspár Laci', 'Pálfi Máté Gergely', 'Szoboszlai Dominik',
+            'Sajt32', 'Hamvas István', 'Johnny Sins', 'Pamkutya', 'Arany János', 'Dzsúdló', 'Szolnok Tibor', 'Karácsony Gergely', 'Mona Lisa',
+            'Albert Einstein', 'Marilyn Monroe', 'Leonardo DiCaprio', 'Scarlett Johansson', 'Brad Pitt', 'ABBA', 'Neoton Família', 'Bódi Guszti', 'Eminem',
+            'Vin Diesel', 'Lady Gaga', 'Tom Holland', 'Robert Downey Jr.',
+
+            'Nikola Tesla', 'Isaac Newton', 'Galileo Galilei', 'Marie Curie', 'Charles Darwin',
+            'Petőfi Sándor', 'Ady Endre', 'József Attila', 'Márai Sándor', 'Karinthy Frigyes',
+            'Freddie Mercury', 'Elvis Presley', 'David Bowie', 'Korda György', 'Tóth Gabi',
+            'Keanu Reeves', 'Tom Cruise', 'Angelina Jolie', 'Hugh Jackman', 'Morgan Freeman',
+            'Cristiano Ronaldo', 'Lionel Messi', 'Michael Jordan', 'Lewis Hamilton', 'Puskás Ferenc',
+            'Napóleon Bonaparte', 'Vlagyimir Lenin', 'Kossuth Lajos', 'Winston Churchill', 'Nelson Mandela',
+            'Will Smith', 'Emma Stone', 'Chris Hemsworth', 'Zendaya', 'Cillian Murphy',
+            'Matt Damon', 'Benedict Cumberbatch', 'Anne Hathaway', 'Jason Momoa', 'Selena Gomez',
+            'Nagy Feró', 'Fluor Tomi', 'Tóth Andi', 'Kulka János', 'Bödőcs Tibor',
+            'Keresztes Ildikó', 'Törőcsik Mari', 'Alföldi Róbert', 'Caramel', 'Majka'
+        ];
+
+        const imageCount = Math.min(maxImages, answers.length);
+
+        let images = [];
+        let order = [];
+        let current = 0;
+        let pixelSize = basePixelSize;
+        let mistakes = 0;
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const input = document.getElementById('guess');
+        const status = document.getElementById('status');
+        const mistakesDisplay = document.getElementById('mistakes');
+        const suggestionsDiv = document.getElementById('suggestions');
+        const form = document.getElementById('guessForm');
+        const progressInfo = document.getElementById('progressInfo');
+        const submitButton = document.getElementById('submit');
+
+        let selectedIndex = -1;
+        let awaitingNext = false; // lock to prevent multiple advances
+
+        function updateMaxCanvasSize() {
+            const vw = Math.max(320, window.innerWidth);
+            maxCanvasSize = Math.min(maxAllowed, Math.floor(vw * 0.7));
+            if (maxCanvasSize < 300) maxCanvasSize = 300;
+            pixelSize = Math.max(1, Math.round(basePixelSize * (maxCanvasSize / 500)));
+        }
+
+        for (let i = 0; i < imageCount; i++) order.push(i);
+        order.sort(() => Math.random() - 0.5);
+
+        for (let i = 0; i < imageCount; i++) {
+            const img = new Image();
+            img.src = `${imageFolder}${i + 1}.jpg`;
+            images.push(img);
+        }
+
+        function updateProgressInfo() {
+            const total = imageCount;
+            const currentIndex = Math.min(current + 1, total);
+            const remaining = Math.max(0, total - currentIndex);
+            progressInfo.textContent = `Kép: ${currentIndex} / ${total}`;
+        }
+
+        function drawPixelated(img, pixelSizeParam) {
+            const imgW = img.naturalWidth || img.width || maxCanvasSize;
+            const imgH = img.naturalHeight || img.height || maxCanvasSize;
+            const aspect = imgW && imgH ? (imgW / imgH) : 1;
+
+            let drawW, drawH;
+            if (aspect >= 1) {
+                drawW = maxCanvasSize;
+                drawH = Math.round(maxCanvasSize / aspect);
+            } else {
+                drawH = maxCanvasSize;
+                drawW = Math.round(maxCanvasSize * aspect);
+            }
+            drawW = Math.max(1, drawW);
+            drawH = Math.max(1, drawH);
+
+            const ratio = window.devicePixelRatio || 1;
+            canvas.style.width = drawW + 'px';
+            canvas.style.height = drawH + 'px';
+            canvas.width = drawW * ratio;
+            canvas.height = drawH * ratio;
+            ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+
+            if (pixelSizeParam <= 1) {
+                ctx.clearRect(0, 0, drawW, drawH);
+                ctx.imageSmoothingEnabled = true;
+                ctx.drawImage(img, 0, 0, drawW, drawH);
+                return;
+            }
+
+            const scaledW = Math.max(1, Math.ceil(drawW / pixelSizeParam));
+            const scaledH = Math.max(1, Math.ceil(drawH / pixelSizeParam));
+
+            const off = document.createElement('canvas');
+            off.width = scaledW;
+            off.height = scaledH;
+            const octx = off.getContext('2d');
+            octx.imageSmoothingEnabled = false;
+            octx.clearRect(0, 0, scaledW, scaledH);
+            octx.drawImage(img, 0, 0, scaledW, scaledH);
+
+            ctx.clearRect(0, 0, drawW, drawH);
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(off, 0, 0, scaledW, scaledH, 0, 0, drawW, drawH);
+        }
+
+        function showImage() {
+            updateMaxCanvasSize();
+            updateProgressInfo();
+
+            const idx = order[current];
+            const img = images[idx];
+            if (!img.complete) {
+                img.onload = () => drawPixelated(img, pixelSize);
+                img.onerror = () => {
+                    const ratio = window.devicePixelRatio || 1;
+                    const drawW = Math.min(maxCanvasSize, 300);
+                    const drawH = Math.min(maxCanvasSize, 200);
+                    canvas.style.width = drawW + 'px';
+                    canvas.style.height = drawH + 'px';
+                    canvas.width = drawW * ratio;
+                    canvas.height = drawH * ratio;
+                    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+                    ctx.clearRect(0, 0, drawW, drawH);
+                    ctx.fillStyle = '#eee';
+                    ctx.fillRect(0, 0, drawW, drawH);
+                    ctx.fillStyle = '#222';
+                    ctx.fillText('Hiányzó kép', 8, 20);
+                };
+            } else {
+                drawPixelated(img, pixelSize);
+            }
+        }
+
+        function checkGuess() {
+            if (awaitingNext) return; // ignore input while waiting to advance
+
+            const guess = input.value.trim().toLowerCase();
+            const correct = answers[order[current]].toLowerCase();
+
+            if (guess === correct) {
+                // lock UI so repeated Enter/click won't schedule multiple advances
+                awaitingNext = true;
+                input.disabled = true;
+                submitButton.disabled = true;
+
+                pixelSize = 1;
+                drawPixelated(images[order[current]], pixelSize);
+                status.textContent = 'Helyes!';
+                setTimeout(() => {
+                    current++;
+                    if (current < imageCount) {
+                        pixelSize = Math.max(1, Math.round(basePixelSize * (maxCanvasSize / 500)));
+                        input.value = '';
+                        suggestionsDiv.innerHTML = '';
+                        status.textContent = '';
+                        updateProgressInfo();
+                        // re-enable for next round
+                        awaitingNext = false;
+                        input.disabled = false;
+                        submitButton.disabled = false;
+                        showImage();
+                    } else {
+                        suggestionsDiv.innerHTML = '';
+                        window.location.href = 'congrats.html';
+                    }
+                }, 900);
+            } else {
+                pixelSize = Math.max(2, pixelSize - Math.max(6, Math.round(8 * (maxCanvasSize / 500))));
+                drawPixelated(images[order[current]], pixelSize);
+                mistakes++;
+                mistakesDisplay.textContent = `Hibák: ${mistakes}`;
+                status.textContent = 'NEM TALÁLT!';
+                status.style.color = '#ff4c4c';
+            }
+        }
+
+        form.addEventListener('submit', e => {
+            e.preventDefault();
+            if (awaitingNext) return; // ignore while locked
+            if (selectedIndex >= 0) {
+                const items = suggestionsDiv.querySelectorAll('.suggestion-item');
+                if (items[selectedIndex]) {
+                    input.value = items[selectedIndex].textContent;
+                    suggestionsDiv.innerHTML = '';
+                    selectedIndex = -1;
+                }
+            }
+            checkGuess();
+        });
+
+        function updateSuggestions() {
+            const text = input.value.trim().toLowerCase();
+            suggestionsDiv.innerHTML = '';
+            selectedIndex = -1;
+            if (!text) return;
+
+            const matches = answers.filter(name => name.toLowerCase().includes(text));
+            if (matches.length > 0) {
+                matches.forEach((m) => {
+                    const div = document.createElement('div');
+                    div.className = 'suggestion-item';
+                    div.textContent = m;
+                    div.addEventListener('mousedown', e => {
+                        e.preventDefault();
+                        input.value = m;
+                        suggestionsDiv.innerHTML = '';
+                        input.focus();
+                    });
+                    suggestionsDiv.appendChild(div);
+                });
+            } else {
+                const div = document.createElement('div');
+                div.className = 'suggestion-item';
+                div.textContent = 'Nincs találat.';
+                suggestionsDiv.appendChild(div);
+            }
+        }
+
+        input.addEventListener('keydown', e => {
+            const items = suggestionsDiv.querySelectorAll('.suggestion-item');
+            if (items.length === 0) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+                items.forEach((it, idx) => it.classList.toggle('selected', idx === selectedIndex));
+                if (items[selectedIndex]) items[selectedIndex].scrollIntoView({ block: 'nearest' });
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                selectedIndex = Math.max(selectedIndex - 1, 0);
+                items.forEach((it, idx) => it.classList.toggle('selected', idx === selectedIndex));
+                if (items[selectedIndex]) items[selectedIndex].scrollIntoView({ block: 'nearest' });
+            } else if (e.key === 'Enter') {
+                if (selectedIndex >= 0 && items[selectedIndex]) {
+                    e.preventDefault();
+                    input.value = items[selectedIndex].textContent;
+                    suggestionsDiv.innerHTML = '';
+                    selectedIndex = -1;
+                    checkGuess();
+                }
+            }
+        });
+
+        input.addEventListener('input', updateSuggestions);
+
+        document.addEventListener('click', (e) => {
+            if (!suggestionsDiv.contains(e.target) && e.target !== input) {
+                suggestionsDiv.innerHTML = '';
+                selectedIndex = -1;
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            updateMaxCanvasSize();
+            pixelSize = Math.max(1, Math.round(basePixelSize * (maxCanvasSize / 500)));
+            showImage();
+        });
+
+        updateMaxCanvasSize();
+        pixelSize = Math.max(1, Math.round(basePixelSize * (maxCanvasSize / 500)));
+        updateProgressInfo();
+        showImage();
+    </script>
+
+</body>
+</html>
