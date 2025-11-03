@@ -23,7 +23,7 @@ else if (document.documentElement && (document.documentElement.scrollLeft || doc
 }
 else
 {
-	snow_browser_width = 60;
+	snow_browser_width = 50;
 	snow_browser_height = 100;	
 }
 
